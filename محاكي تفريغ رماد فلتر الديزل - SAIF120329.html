@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>محاكي تفريغ رماد فلتر الديزل - SAIF120329</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#070d1a;--panel:#0d1628;--line:#1e2b45;--tx:#e8eefc;--mut:#8a9ac0;--bl:#3b82f6;--or:#f97316;--gr:#22c55e;--cy:#38bdf8;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:inherit}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--tx);font-family:'Cairo',Tahoma,sans-serif}
+#app{display:flex;flex-direction:row-reverse;height:100%}
+#panel{width:350px;max-width:100%;overflow:auto;padding:12px;background:var(--bg);border-left:1px solid var(--line);flex:none}
+#stage{flex:1;position:relative;min-width:0}
+canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:grab}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:12px}
+.box h3{margin:0 0 10px;font-size:15px}
+.big{width:100%;padding:12px;border:0;border-radius:12px;background:linear-gradient(90deg,#2563eb,#38bdf8);color:#fff;font:700 16px Cairo,sans-serif;cursor:pointer}
+.sw{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;padding:10px 12px;margin-bottom:8px;background:#0a1224;border:1px solid var(--line);border-radius:12px;color:var(--tx);font:700 14px Cairo,sans-serif;cursor:pointer;text-align:right}
+.sw small{display:block;color:var(--mut);font-weight:400;font-size:11px;direction:ltr;text-align:right}
+.sw .st{font:700 12px monospace;padding:6px 10px;border-radius:8px;background:#1b2740;color:var(--mut)}
+.sw.on .st{background:#14532d;color:#86efac}
+.sw.on{border-color:var(--gr)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mini{padding:10px;background:#0a1224;border:1px solid var(--line);border-radius:12px;color:var(--tx);font:700 13px Cairo,sans-serif;cursor:pointer}
+.mini.on{border-color:var(--cy);color:var(--cy)}
+input[type=range]{width:100%}
+#cap{position:absolute;top:12px;left:12px;right:12px;background:rgba(13,22,40,.92);border:1px solid var(--line);border-right:4px solid var(--cy);border-radius:14px;padding:10px 14px;pointer-events:none;display:flex;gap:12px;align-items:center}
+#cap b{display:block;font-size:16px}#cap span{font-size:13px;color:var(--mut)}
+#num{flex:none;width:38px;height:38px;border-radius:50%;border:1px solid var(--cy);display:grid;place-items:center;font:700 14px monospace;color:var(--cy)}
+#pct{display:inline-block;margin-bottom:10px;padding:6px 12px;border:1px solid #14532d;border-radius:8px;background:#06210f;color:#86efac;font:700 13px monospace}
+.lab{position:absolute;transform:translate(-50%,-50%);padding:3px 8px;background:rgba(7,13,26,.88);border:1px solid var(--cy);border-radius:8px;font-size:11px;white-space:nowrap;pointer-events:none;display:none}
+#leg{position:absolute;bottom:12px;left:12px;right:12px;display:flex;gap:12px;flex-wrap:wrap;justify-content:center;font-size:12px;pointer-events:none}
+#leg span{background:rgba(13,22,40,.9);border:1px solid var(--line);border-radius:20px;padding:5px 12px}
+#leg i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-left:6px}
+#err{display:none;position:absolute;inset:40% 10% auto;text-align:center;color:#fca5a5}
+@media(max-width:800px){#app{flex-direction:column-reverse}#panel{width:100%;height:46%;border-left:0;border-top:1px solid var(--line)}#cap b{font-size:14px}}
+</style>
+</head>
+<body>
+<div id="app">
+ <div id="panel">
+  <div class="box">
+   <h3>العرض السردي للمهندس والمحكمين</h3>
+   <div id="pct">الرماد المجمّع: 0%</div>
+   <button class="big" id="story">▶ تشغيل القصة الكاملة (4 مراحل)</button>
+  </div>
+  <div class="box">
+   <h3>مفاتيح التشغيل اليدوية المستقلة <span style="color:var(--mut);font-size:11px;float:left">12V DC</span></h3>
+   <button class="sw" id="bVib"><span>01. محرك الاهتزاز اللامركزي<small>Vibration Motor Ø54×82mm</small></span><span class="st">OFF</span></button>
+   <button class="sw" id="bFan"><span>02. مروحة دفع الهواء الموجهة<small>120mm Air-Push Fan</small></span><span class="st">OFF</span></button>
+   <div class="row">
+    <button class="mini" id="bCup">03. فك الكوب الأخضر</button>
+    <button class="mini" id="bReset">إعادة تعبئة الرماد</button>
+   </div>
+  </div>
+  <div class="box">
+   <h3>تفكيك القطع السبع (Exploded View) <span id="exv" style="float:left;color:var(--cy)">0%</span></h3>
+   <input type="range" id="ex" min="0" max="100" value="0">
+   <div class="row" style="margin-top:10px">
+    <button class="mini on" id="bTr">الهيكل الشفاف</button>
+    <button class="mini" id="bDim">الأبعاد والأسماء</button>
+    <button class="mini on" id="bAir">أسهم الهواء</button>
+    <button class="mini" id="bSpin">دوران تلقائي</button>
+    <button class="mini on" id="bIn">نقطة دخول الرماد</button>
+   </div>
+  </div>
+  <div class="box">
+   <h3>زوايا العرض</h3>
+   <div class="row">
+    <button class="mini" data-v="3d">منظور 3D</button>
+    <button class="mini" data-v="dirty">الجانب المتسخ</button>
+    <button class="mini" data-v="side">مقطع جانبي</button>
+    <button class="mini" data-v="top">من الأعلى</button>
+   </div>
+  </div>
+  <div style="color:var(--mut);font-size:11px;text-align:center">SAIF120329 · نموذج بمقياس 150% (350 × 255 × 425 مم)</div>
+ </div>
+ <div id="stage">
+  <canvas id="c"></canvas>
+  <div id="cap"><div id="num">00</div><div><b id="ct">الوضع الجاهز: اسحب لتدوير المجسم 360° أو شغّل القصة الكاملة</b><span id="cs">اضغط "تشغيل القصة الكاملة" لشرح آلية الاهتزاز ودفع الهواء وتفريغ الكوب.</span></div></div>
+  <div id="labs"></div>
+  <div id="leg"><span><i style="background:#9ca3af"></i>هيكل وفلتر</span><span><i style="background:var(--or)"></i>01 اهتزاز</span><span><i style="background:var(--bl)"></i>02 دفع هواء</span><span><i style="background:var(--gr)"></i>03 كوب الرماد</span></div>
+  <div id="err">تعذّر تشغيل WebGL في هذا المتصفح. جرّب Chrome محدّثاً.</div>
+ </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const $=id=>document.getElementById(id),V3=(x,y,z)=>new THREE.Vector3(x,y,z);
+let R;try{R=new THREE.WebGLRenderer({canvas:$('c'),antialias:true,alpha:true})}catch(e){$('err').style.display='block'}
+if(R){
+R.setPixelRatio(Math.min(devicePixelRatio,2));
+const S=new THREE.Scene(),cam=new THREE.PerspectiveCamera(40,1,1,500);
+S.add(new THREE.AmbientLight(0xffffff,.65));
+const dl=new THREE.DirectionalLight(0xffffff,.9);dl.position.set(30,60,40);S.add(dl);
+const dl2=new THREE.DirectionalLight(0x88aaff,.4);dl2.position.set(-40,10,-30);S.add(dl2);
+const M=(c,o)=>new THREE.MeshStandardMaterial(Object.assign({color:c,roughness:.5,metalness:.15},o||{}));
+const cyl=(r,l,m,s)=>{const g=new THREE.CylinderGeometry(r,r,l,s||48);g.rotateZ(Math.PI/2);return new THREE.Mesh(g,m)};
+const box=(x,y,z,m)=>new THREE.Mesh(new THREE.BoxGeometry(x,y,z),m);
+const place=(o,x,y,z)=>{o.position.set(x,y,z);return o};
+// hex texture for honeycomb
+const hc=document.createElement('canvas');hc.width=hc.height=512;const hx=hc.getContext('2d');hx.fillStyle='#6b7280';hx.fillRect(0,0,512,512);hx.strokeStyle='#d1d5db';hx.lineWidth=3;
+for(let r=0;r<20;r++)for(let c=0;c<20;c++){const x=c*34+(r%2?17:0),y=r*29.5;hx.beginPath();for(let i=0;i<6;i++){const a=Math.PI/3*i+Math.PI/6;hx[i?'lineTo':'moveTo'](x+17*Math.cos(a)/.866*.866*1.0,y+17*Math.sin(a))}hx.closePath();hx.stroke()}
+const hexT=new THREE.CanvasTexture(hc);
+const grey=M(0x9ca3af),dark=M(0x1f2937),blue=M(0x2563eb),orng=M(0xf97316),grn=M(0x22c55e);
+const root=new THREE.Group();S.add(root);const body=new THREE.Group();root.add(body);
+const parts=[];
+function part(name,dim,dir,anchor,parent){const g=new THREE.Group();(parent||body).add(g);const p={name,dim,dir:dir,g,anchor,base:V3(0,0,0)};parts.push(p);return p}
+// 1 housing
+const pH=part('01 الهيكل الشفاف','Ø210×330mm',V3(0,0,0),V3(0,10.8,0));
+const hm=new THREE.MeshPhysicalMaterial({color:0xaed6f1,transparent:true,opacity:.16,roughness:.1,side:THREE.DoubleSide,depthWrite:false});
+const hg=new THREE.CylinderGeometry(10.5,10.5,33,56,1,true);hg.rotateZ(Math.PI/2);pH.g.add(new THREE.Mesh(hg,hm));
+const pipe=new THREE.Mesh(new THREE.CylinderGeometry(2.75,2.75,6,32,1,true),new THREE.MeshStandardMaterial({color:0x9ca3af,side:THREE.DoubleSide,roughness:.5,metalness:.15}));pipe.position.set(-11.5,13.3,0);pH.g.add(pipe);
+const prim=new THREE.Mesh(new THREE.TorusGeometry(2.9,.4,8,32),new THREE.MeshStandardMaterial({color:0xfacc15}));prim.rotation.x=Math.PI/2;prim.position.set(-11.5,16.3,0);pH.g.add(prim);
+[-16.5,16.5].forEach(x=>{const t=new THREE.TorusGeometry(10.5,.35,8,56);t.rotateY(Math.PI/2);const m=new THREE.Mesh(t,M(0xcbd5e1));m.position.x=x;pH.g.add(m)});
+// 2 core
+const pC=part('02 قلب الفلتر','Ø192×210mm',V3(46,0,0),V3(5,-3,10));
+pC.g.add(place(cyl(9.6,21,grey),4,0,0));
+const disc=new THREE.Mesh(new THREE.CircleGeometry(9.6,48),new THREE.MeshBasicMaterial({map:hexT}));disc.rotation.y=-Math.PI/2;disc.position.x=-6.55;pC.g.add(disc);
+const disc2=disc.clone();disc2.rotation.y=Math.PI/2;disc2.position.x=14.55;pC.g.add(disc2);
+// 3 fan cap + fan
+const pF=part('03 غطاء ومروحة 120mm','120×120×25mm',V3(-34,0,0),V3(-22,9,0));
+pF.g.add(place(cyl(11.7,3.3,blue),-18.15,0,0));
+pF.g.add(place(box(2.5,12,12,M(0x1e3a8a)),-21.5,0,0));
+const fan=new THREE.Group();fan.position.set(-22.9,0,0);pF.g.add(fan);
+for(let i=0;i<7;i++){const b=box(.3,5,1.6,M(0x93c5fd));const h=new THREE.Group();b.position.y=3.2;b.rotation.y=.5;h.add(b);h.rotation.x=i*Math.PI*2/7;fan.add(h)}
+fan.add(cyl(1.3,.8,M(0x0f172a),16));
+// 4 exhaust
+const pE=part('04 غطاء المخرج','Ø234 / مخرج Ø90mm',V3(70,0,0),V3(21,8,0));
+pE.g.add(place(cyl(11.7,3,grey),18,0,0));pE.g.add(place(cyl(4.5,3,M(0x6b7280)),21,0,0));
+// 5 motor
+const pM=part('05 محرك الاهتزاز','Ø54×82mm',V3(0,26,0),V3(-1,16.5,0));
+pM.g.add(place(cyl(2.7,8.2,orng,24),-1,13.2,0));
+pM.g.add(place(box(5,1.4,5,M(0x374151)),-1,10.9,0));
+const ecc=new THREE.Group();ecc.position.set(3.6,13.2,0);pM.g.add(ecc);const em=box(1.2,2.6,2.6,M(0xc2410c));em.position.set(0,.9,0);ecc.add(em);
+// 6 cup
+const cupBase=V3(-11.5,-14.4,0);
+const pU=part('06 كوب الرماد','Ø78×98mm',V3(0,-14,0),V3(0,-22,0),root);
+const cg=new THREE.CylinderGeometry(3.9,3.9,9.8,36,1,true);const cm=new THREE.MeshStandardMaterial({color:0x22c55e,transparent:true,opacity:.55,side:THREE.DoubleSide,roughness:.4});
+pU.g.add(new THREE.Mesh(cg,cm));const cb=new THREE.Mesh(new THREE.CircleGeometry(3.9,36),grn);cb.rotation.x=Math.PI/2;cb.position.y=-4.85;pU.g.add(cb);cb.material.side=THREE.DoubleSide;
+const rim=new THREE.Mesh(new THREE.TorusGeometry(4.3,.45,8,36),grn);rim.rotation.x=Math.PI/2;rim.position.y=4.5;pU.g.add(rim);
+// 7 stand
+const pS=part('07 القاعدة والنوابض','360×255mm',V3(0,-16,0),V3(10,-29,13),root);
+pS.g.add(place(box(36,1,25.5,dark),1.5,-28,0));
+const springs=[];
+[[2,8],[2,-8],[13,8],[13,-8]].forEach(([x,z])=>{const sp=new THREE.Mesh(new THREE.CylinderGeometry(1.1,1.1,5,12),new THREE.MeshStandardMaterial({color:0xd1d5db,wireframe:true}));sp.position.set(x,-25.5,z);pS.g.add(sp);springs.push(sp)});
+[2,13].forEach(x=>pS.g.add(place(box(4,14,10,grey),x,-16,0)));
+// ash particles
+const N=110,ps=[];const pg=new THREE.SphereGeometry(.3,8,8),pm=new THREE.MeshBasicMaterial({color:0xf1f5f9});
+const ashG=new THREE.Group();body.add(ashG);root.add(new THREE.Group());
+for(let i=0;i<N;i++){const m=new THREE.Mesh(pg,pm);ashG.add(m);ps.push({m,s:0,v:V3(0,0,0),l:V3(0,0,0)})}
+function ashReset(){ps.forEach(p=>{const r=8.8*Math.sqrt(Math.random()),a=Math.random()*6.283;p.s=0;p.v.set(0,0,0);p.m.position.set(-6.9-Math.random()*.7,r*Math.cos(a),r*Math.sin(a))})}
+ashReset();
+// airflow cones
+const air=[];const ag=new THREE.ConeGeometry(.5,1.6,8);ag.rotateZ(-Math.PI/2);
+for(let i=0;i<18;i++){const m=new THREE.Mesh(ag,new THREE.MeshBasicMaterial({color:0x60a5fa,transparent:true,opacity:.85}));const r=7*Math.sqrt(Math.random()),a=Math.random()*6.283;m.userData={y:r*Math.cos(a),z:r*Math.sin(a),o:Math.random()*10};S.add(m);air.push(m)}
+// inlet marker
+const inG=[];const ig=new THREE.ConeGeometry(.6,2,8);ig.rotateZ(-Math.PI/2);
+for(let i=0;i<10;i++){const m=new THREE.Mesh(ig,new THREE.MeshBasicMaterial({color:0xfacc15}));m.userData={y:6*Math.sqrt(Math.random())*Math.cos(i*2.4),z:6*Math.sqrt(Math.random())*Math.sin(i*2.4),o:i/10};S.add(m);inG.push(m)}
+const ringG=new THREE.TorusGeometry(9.8,.25,8,48);ringG.rotateY(Math.PI/2);
+const ring=new THREE.Mesh(ringG,new THREE.MeshBasicMaterial({color:0xfacc15}));ring.position.x=-7;body.add(ring);
+const inEl=document.createElement('div');inEl.className='lab';inEl.style.borderColor='#facc15';inEl.innerHTML='<b>⬇ منفذ دخول العادم والرماد</b><br>Ø55mm - أعلى الجانب المتسخ';$('labs').appendChild(inEl);
+// labels
+const labs=$('labs');parts.forEach(p=>{const d=document.createElement('div');d.className='lab';d.innerHTML='<b>'+p.name+'</b><br>'+p.dim;labs.appendChild(d);p.el=d});
+// state
+const st={vib:0,fan:0,cup:0,ex:0,tr:1,dim:0,air:1,spin:0,inl:1},cupOff=V3(0,0,0);
+let yaw=.55,pit=.3,dist=95,tx=0,ty=-6;let T={yaw,pit,dist,tx,ty};
+const views={'3d':[.55,.3,95,0,-6],dirty:[.9,.2,48,-8,-8],side:[0,.02,100,0,-8],top:[0,1.35,90,0,-6]};
+document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{const v=views[b.dataset.v];T={yaw:v[0],pit:v[1],dist:v[2],tx:v[3],ty:v[4]};st.spin=0;$('bSpin').classList.remove('on')});
+let drag=null;const cv=$('c');
+cv.onpointerdown=e=>{drag=[e.clientX,e.clientY];cv.setPointerCapture(e.pointerId);cv.style.cursor='grabbing'};
+cv.onpointerup=()=>{drag=null;cv.style.cursor='grab'};
+cv.onpointermove=e=>{if(!drag)return;T.yaw-=(e.clientX-drag[0])*.007;T.pit=Math.max(-.2,Math.min(1.45,T.pit+(e.clientY-drag[1])*.007));drag=[e.clientX,e.clientY]};
+cv.onwheel=e=>{e.preventDefault();T.dist=Math.max(30,Math.min(180,T.dist*(1+e.deltaY*.001)))};
+// UI
+const tog=(id,k,cb)=>{$(id).onclick=()=>{st[k]=st[k]?0:1;$(id).classList.toggle('on',!!st[k]);const s=$(id).querySelector('.st');if(s)s.textContent=st[k]?'ON':'OFF';cb&&cb()}};
+tog('bVib','vib');tog('bFan','fan');tog('bTr','tr');tog('bDim','dim');tog('bAir','air');tog('bSpin','spin');tog('bIn','inl');
+$('bTr').classList.add('on');$('bAir').classList.add('on');
+function setSw(k,id,v){st[k]=v;$(id).classList.toggle('on',!!v);$(id).querySelector('.st').textContent=v?'ON':'OFF'}
+function setCup(v){st.cup=v;$('bCup').textContent=v?'03. تركيب الكوب':'03. فك الكوب الأخضر';$('bCup').classList.toggle('on',!!v)}
+$('bCup').onclick=()=>{if(story)stopStory();setCup(st.cup?0:1)};
+$('bReset').onclick=()=>{setCup(0);ashReset()};
+$('ex').oninput=e=>{st.ex=e.target.value/100;$('exv').textContent=e.target.value+'%'};
+$('bVib').addEventListener('click',()=>{if(story)stopStory()});$('bFan').addEventListener('click',()=>{if(story)stopStory()});
+// story
+let story=0;const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function cap(n,t,s){$('num').textContent='0'+n;$('ct').textContent=t;$('cs').textContent=s}
+function stopStory(){story++;$('story').textContent='▶ تشغيل القصة الكاملة (4 مراحل)'}
+$('story').onclick=async()=>{if($('story').dataset.run==='1'){stopStory();$('story').dataset.run='0';return}
+ const id=++story;$('story').dataset.run='1';$('story').textContent='■ إيقاف القصة';
+ const ok=()=>id===story;
+ setSw('vib','bVib',0);setSw('fan','bFan',0);setCup(0);ashReset();T={yaw:.55,pit:.3,dist:95,tx:0,ty:-6};
+ cap(1,'المرحلة 1: تراكم الرماد','العادم يدخل من المقدمة، والفلتر الهانيكوم يحتجز الرماد غير القابل للاحتراق على وجهه (الجانب المتسخ).');await sleep(5000);if(!ok())return end();
+ T={yaw:.9,pit:.25,dist:55,tx:-6,ty:-6};setSw('vib','bVib',1);cap(2,'المرحلة 2: الاهتزاز المتقطع','المحرك العلوي يهز الفلتر فيتفكك الرماد من القنوات ويسقط. النوابض تمنع انتقال الاهتزاز للقاعدة.');await sleep(6000);if(!ok())return end();
+ setSw('fan','bFan',1);cap(3,'المرحلة 3: دفع الهواء','المروحة الأمامية تمرر تيار هواء عبر الجانب المتسخ فتكنس الرماد وتوجهه إلى الكوب الأخضر السفلي.');await sleep(8000);if(!ok())return end();
+ setSw('vib','bVib',0);setSw('fan','bFan',0);T={yaw:.5,pit:.25,dist:70,tx:-8,ty:-12};setCup(1);cap(4,'المرحلة 4: التفريغ بلمسة يد','يُفك الكوب الأخضر بيد واحدة دون تفكيك الفلتر، ويُفرّغ الرماد ثم يُعاد تركيبه.');await sleep(6000);if(!ok())return end();
+ cap(0,'اكتملت القصة','يمكنك الآن تشغيل المفاتيح يدوياً أو سحب شريط التفكيك لشرح القطع السبع.');end();
+ function end(){if(id===story||true){$('story').dataset.run='0';$('story').textContent='▶ تشغيل القصة الكاملة (4 مراحل)'}}};
+// loop
+const clk=new THREE.Clock();let tt=0;
+function resize(){const w=$('stage').clientWidth,h=$('stage').clientHeight;R.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix()}
+addEventListener('resize',resize);resize();
+function loop(){requestAnimationFrame(loop);const dt=Math.min(clk.getDelta(),.05);tt+=dt;
+ if(st.spin&&!drag)T.yaw+=dt*.5;
+ const k=1-Math.pow(.001,dt);yaw+=(T.yaw-yaw)*k;pit+=(T.pit-pit)*k;dist+=(T.dist-dist)*k;tx+=(T.tx-tx)*k;ty+=(T.ty-ty)*k;
+ cam.position.set(tx+dist*Math.sin(yaw)*Math.cos(pit),ty+dist*Math.sin(pit),dist*Math.cos(yaw)*Math.cos(pit));cam.lookAt(tx,ty,0);
+ hm.opacity=st.tr?.16:.55;
+ // vibration
+ const vb=st.vib?1:0;body.position.set(0,vb*Math.sin(tt*90)*.12,vb*Math.cos(tt*77)*.1);
+ springs.forEach((s,i)=>s.scale.y=1+vb*Math.sin(tt*90+i)*.05);
+ if(vb)ecc.rotation.x+=dt*60;if(st.fan)fan.rotation.x+=dt*28;
+ // explode & detach
+ const tgt=V3(st.cup?0:0,0,0);cupOff.lerp(st.cup?V3(0,-4,18):V3(0,0,0),1-Math.pow(.01,dt));
+ parts.forEach(p=>{p.g.position.copy(p.dir).multiplyScalar(st.ex)});
+ pU.g.position.copy(cupBase).add(pU.dir.clone().multiplyScalar(st.ex)).add(cupOff);
+ ashG.visible=st.ex<.03;
+ // ash physics
+ const cpos=V3(cupBase.x+cupOff.x,cupBase.y+cupOff.y,cupBase.z+cupOff.z);let inC=0;
+ ps.forEach(p=>{const m=p.m.position;
+  if(p.s===0){if(vb){m.y+=(Math.random()-.5)*.08;m.z+=(Math.random()-.5)*.08;if(Math.random()<dt*.9){p.s=1;p.v.set((Math.random()-.3)*1.5,0,(Math.random()-.5)*1.5)}}}
+  else if(p.s===1){p.v.y-=30*dt;m.addScaledVector(p.v,dt);
+   if(st.fan&&m.y>-9.8){p.v.x+=(Math.random()*.5+.2)*dt*10}
+   const over=!st.cup&&Math.abs(m.x-cupBase.x)<3.4&&Math.abs(m.z)<3.4;
+   if(m.y<-9.9&&!over){m.y=-9.9;p.v.y=0;p.v.x*=.85;p.v.z*=.85;
+    if(st.fan){const d=cupBase.x-m.x;m.x+=Math.sign(d)*Math.min(Math.abs(d),9*dt);m.z+=(-m.z)*Math.min(1,4*dt)}}
+   const rr=Math.hypot(m.y,m.z);if(rr>9.9&&m.y>-9.8){const f=9.9/rr;m.y*=f;m.z*=f}
+   if(m.y<-18.4){p.s=2;const a=Math.random()*6.283,r=3.2*Math.sqrt(Math.random());p.l.set(r*Math.cos(a),-4.2+Math.random()*1.8,r*Math.sin(a))}}
+  else{inC++;m.set(cpos.x+p.l.x,cpos.y+p.l.y,cpos.z+p.l.z)}});
+ // particles in cup live in root space; ash group is in body (offset by body jitter) – compensate
+ ps.forEach(p=>{if(p.s===2){p.m.position.sub(body.position)}});
+ $('pct').textContent='الرماد المجمّع: '+Math.round(inC/N*100)+'%';
+ // airflow
+ air.forEach(m=>{m.visible=!!(st.fan&&st.air&&st.ex<.03);if(!m.visible)return;const f=((tt*.9+m.userData.o)%1);m.position.set(-16+f*14,m.userData.y,m.userData.z)});
+ // inlet
+ const iv=!!(st.inl&&st.ex<.03);ring.visible=iv;ring.scale.setScalar(1+.04*Math.sin(tt*5));
+ inG.forEach(m=>{m.visible=iv;if(iv){const f=(tt*.6+m.userData.o)%1;m.rotation.z=-Math.PI/2;m.position.set(-11.5+m.userData.y*.3,21-f*19,m.userData.z*.3)}});
+ if(iv){const v=V3(-11.5,22,0);v.project(cam);inEl.style.display=v.z<1?'block':'none';inEl.style.left=(v.x*.5+.5)*$('stage').clientWidth+'px';inEl.style.top=(-v.y*.5+.5)*$('stage').clientHeight+'px'}else inEl.style.display='none';
+ // labels
+ const w=$('stage').clientWidth,h=$('stage').clientHeight;
+ parts.forEach(p=>{if(!st.dim){p.el.style.display='none';return}const v=p.anchor.clone().add(p.g.position);if(p===pU||p===pS)v.copy(p.anchor).add(p.g.position).sub(p===pU?cupBase:V3(0,0,0));v.project(cam);p.el.style.display=v.z<1?'block':'none';p.el.style.left=(v.x*.5+.5)*w+'px';p.el.style.top=(-v.y*.5+.5)*h+'px'});
+ R.render(S,cam)}
+loop();
+}
+</script>
+</body>
+</html>
